@@ -1,0 +1,26 @@
+<mobilephones>
+    <phone sr="1">
+        <id> 11 </id>
+        <name>Samsung</name>
+        <unitprice>35000</unitprice>
+        <stock>50</stock>
+        <status>1</status>
+    </phone>
+
+    <phone sr="2">
+        <id> 20 </id>
+        <name>HTC</name>
+        <unitprice>65300</unitprice>
+        <stock>35</stock>
+        <status>0</status>
+    </phone>
+    
+    <phone sr="3">
+        <id> 23 </id>
+        <name>Nokia</name>
+        <unitprice>25100</unitprice>
+        <stock>100</stock>
+        <status>1</status>
+    </phone>
+    
+</mobilephones>
