@@ -1,22 +1,25 @@
 <?php
-class Database {
-    private $host = "127.0.0.1";
-    private $db_name = "learning_platform";
-    private $username = "root";
-    private $password = "";
-    public $conn;
+$configPath = __DIR__ . '/config.json';
+if (!file_exists($configPath)) {
+    die("Configuration file not found.");
+}
 
-    public function connect() {
-        $this->conn = null;
+$config = json_decode(file_get_contents($configPath), true);
+if ($config === null) {
+    die("Error decoding configuration file.");
+}
 
-        try {
-            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $exception) {
-            echo "Connection error: " . $exception->getMessage();
-        }
+$host = $config['database']['host'] ?? null;
+$username = $config['database']['username'] ?? null;
+$password = $config['database']['password'] ?? null;
+$dbname = $config['database']['dbname'] ?? null;
 
-        return $this->conn;
-    }
+if ($host === null || $username === null || $password === null || $dbname === null) {
+    die("Database configuration is incomplete.");
+}
+
+$conn = new mysqli($host, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
 ?>

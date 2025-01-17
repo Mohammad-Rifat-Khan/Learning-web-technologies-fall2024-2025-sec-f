@@ -1,12 +1,7 @@
 <?php
 // Start the session and establish a connection to the database
 session_start();
-$conn = new mysqli('127.0.0.1', 'root', '', 'learning_platform');
-
-// Check the database connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once '../config/database.php';
 
 // Initialize category from GET parameter
 $category = isset($_GET['category']) ? $_GET['category'] : '';
@@ -14,10 +9,15 @@ $category = isset($_GET['category']) ? $_GET['category'] : '';
 // Query to fetch all courses, or filter by category if set
 $query = "SELECT * FROM courses";
 if (!empty($category)) {
-    $query .= " WHERE category = '$category'";
+    $query .= " WHERE category = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $category);
+} else {
+    $stmt = $conn->prepare($query);
 }
 
-$result = $conn->query($query);
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -26,6 +26,71 @@ $result = $conn->query($query);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User - View Courses</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .course-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .course-card img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .details-button {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .details-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <h1>Welcome, User! View Courses</h1>
@@ -38,7 +103,7 @@ $result = $conn->query($query);
             <option value="">All</option>
             <option value="technology" <?php echo ($category == 'technology') ? 'selected' : ''; ?>>Technology</option>
             <option value="crop" <?php echo ($category == 'crop') ? 'selected' : ''; ?>>Crop</option>
-            <option value="livestock" <?php echo ($category == 'livestock') ? 'selected' : ''; ?>>livestock</option>
+            <option value="livestock" <?php echo ($category == 'livestock') ? 'selected' : ''; ?>>Livestock</option>
             <option value="marketing" <?php echo ($category == 'marketing') ? 'selected' : ''; ?>>Marketing</option>
         </select>
         <button type="submit">Filter</button>
@@ -49,44 +114,19 @@ $result = $conn->query($query);
     <?php
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
-            echo "<div style='border:1px solid #ddd; padding:10px; margin-bottom:10px;'>";
+            echo "<div class='course-card'>";
             echo "<h3>" . htmlspecialchars($row['title']) . "</h3>";
-            echo "<p><strong>Description:</strong> " . htmlspecialchars($row['description']) . "</p>";
-            echo "<p><strong>Category:</strong> " . htmlspecialchars($row['category']) . "</p>";
-            echo "<p><strong>Duration:</strong> " . htmlspecialchars($row['duration']) . "</p>";
-            echo "<p><strong>Price:</strong> $" . htmlspecialchars($row['price']) . "</p>";
-
-            // Display the image if it exists
+            echo "<p>Category: " . htmlspecialchars($row['category']) . "</p>";
             if (!empty($row['image'])) {
-                echo "<img src='path_to_images/" . htmlspecialchars($row['image']) . "' alt='" . htmlspecialchars($row['title']) . "' style='width:200px; height:auto;'><br>";
+                echo "<p><img src='../uploads/" . htmlspecialchars($row['image']) . "' alt='Course Image'></p>";
             }
-
-            // Enroll Button (if not already enrolled)
-            echo "<form action='enroll.php' method='POST'>"; // Form submits to enroll.php
-            echo "<input type='hidden' name='course_id' value='" . $row['id'] . "'>";
-            echo "<button type='submit'>Enroll</button>";
-            echo "</form>";
-
-            echo "</div><hr>";
-
-            // Rating System
-            echo "<form action='../controllers/ratingController.php' method='POST'>";
-            echo "<label for='rating'>Rate this course: </label>";
-            echo "<select name='rating' required>";
-            for ($i = 1; $i <= 5; $i++) {
-                echo "<option value='$i'>$i</option>";
-            }
-            echo "</select>";
-            echo "<input type='hidden' name='course_id' value='" . $row['id'] . "'>";
-            echo "<button type='submit'>Submit Rating</button>";
-            echo "</form>";
-
-            echo "</div><hr>";
+            echo "<a class='details-button' href='user_coursedetails.php?id=" . $row['id'] . "'>Details</a>";
+            echo "</div>";
         }
     } else {
-        echo "<p>No courses available at the moment.</p>";
+        echo "<p>No courses found.</p>";
     }
+    $conn->close();
     ?>
-    <a href="login_form.php">Back to Home</a>
 </body>
 </html>
